@@ -1,0 +1,61 @@
+pragma Singleton
+
+import QtQuick
+import Quickshell
+
+Singleton {
+    id: root
+
+    // Catppuccin Mocha palette - full color set
+    readonly property color rosewater: "#f5e0dc"
+    readonly property color flamingo: "#f2cdcd"
+    readonly property color pink: "#f5c2e7"
+    readonly property color mauve: "#cba6f7"
+    readonly property color red: "#f38ba8"
+    readonly property color maroon: "#eba0ac"
+    readonly property color peach: "#fab387"
+    readonly property color yellow: "#f9e2af"
+    readonly property color green: "#a6e3a1"
+    readonly property color teal: "#94e2d5"
+    readonly property color sky: "#89dceb"
+    readonly property color sapphire: "#74c7ec"
+    readonly property color blue: "#89b4fa"
+    readonly property color lavender: "#b4befe"
+
+    readonly property color text: "#cdd6f4"
+    readonly property color subtext1: "#bac2de"
+    readonly property color subtext0: "#a6adc8"
+    readonly property color overlay2: "#9399b2"
+    readonly property color overlay1: "#7f849c"
+    readonly property color overlay0: "#6c7086"
+    readonly property color surface2: "#585b70"
+    readonly property color surface1: "#45475a"
+    readonly property color surface0: "#313244"
+    readonly property color base: "#1e1e2e"
+    readonly property color mantle: "#181825"
+    readonly property color crust: "#11111b"
+
+    // Semantic color mappings inspired by Material 3 approach
+    readonly property color primary: blue
+    readonly property color onPrimary: base
+    readonly property color secondary: mauve
+    readonly property color onSecondary: base
+    readonly property color surface: surface0
+    readonly property color onSurface: text
+    readonly property color surfaceVariant: surface1
+    readonly property color onSurfaceVariant: subtext0
+    readonly property color outline: overlay0
+    readonly property color error: red
+    readonly property color onError: base
+
+    // Bar-specific semantic colors
+    readonly property color barBackground: mantle
+    readonly property color pillBackground: surface0
+    readonly property color pillText: text
+    readonly property color activeWorkspace: blue
+    readonly property color occupiedWorkspace: surface2
+    readonly property color emptyWorkspace: Qt.alpha(surface1, 0.5)
+
+    // Helper for transparency
+    readonly property color transparent: "transparent"
+}

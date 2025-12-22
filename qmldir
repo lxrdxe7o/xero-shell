@@ -1,0 +1,19 @@
+module XeroShell
+
+# Singletons - Commons
+singleton Colors 1.0 Commons/Colors.qml
+singleton Style 1.0 Commons/Style.qml
+
+# Components
+Anim 1.0 Components/Anim.qml
+ColorAnim 1.0 Components/ColorAnim.qml
+
+# Modules - Bar
+Bar 1.0 Modules/Bar/Bar.qml
+WorkspacesPill 1.0 Modules/Bar/WorkspacesPill.qml
+ClockPill 1.0 Modules/Bar/ClockPill.qml
+WindowTitlePill 1.0 Modules/Bar/WindowTitlePill.qml
+VolumePill 1.0 Modules/Bar/VolumePill.qml
+BatteryPill 1.0 Modules/Bar/BatteryPill.qml
+NetworkPill 1.0 Modules/Bar/NetworkPill.qml
+MediaPill 1.0 Modules/Bar/MediaPill.qml
