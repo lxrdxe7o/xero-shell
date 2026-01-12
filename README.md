@@ -51,6 +51,7 @@ Edit `Commons/Colors.qml` to change the color scheme. The current palette uses C
 ### Dimensions
 
 Edit `Commons/Style.qml` to adjust:
+
 - Bar height (`barHeight: 40`)
 - Pill padding (`pillPaddingHorizontal: 12`)
 - Spacing values
@@ -59,6 +60,7 @@ Edit `Commons/Style.qml` to adjust:
 ### Components
 
 The bar layout is defined in `Modules/Bar/Bar.qml` using a `RowLayout`:
+
 - Left: WorkspacesPill
 - Center: ClockPill
 - Right: System indicators (placeholder)
@@ -66,6 +68,7 @@ The bar layout is defined in `Modules/Bar/Bar.qml` using a `RowLayout`:
 ## Code Style
 
 Follows the guidelines in `AGENTS.md`:
+
 - 4 spaces indentation
 - Imports ordered: Quickshell → Qt → local
 - Properties before functions
@@ -77,6 +80,7 @@ Follows the guidelines in `AGENTS.md`:
 ### Pill Shape
 
 Pills use `ClippingRectangle` with:
+
 ```qml
 radius: Style.radiusFull  // 500 (effectively height/2)
 ```
@@ -84,6 +88,7 @@ radius: Style.radiusFull  // 500 (effectively height/2)
 ### Workspace Integration
 
 Uses `Quickshell.Hyprland` module for workspace management:
+
 - Filters workspaces by monitor
 - Shows 5 workspaces per bar
 - Active state from `Hyprland.focusedWorkspace`
@@ -92,6 +97,7 @@ Uses `Quickshell.Hyprland` module for workspace management:
 ### Animations
 
 Standard animations use Material Design curves:
+
 - `Anim.qml`: 300ms OutCubic for size changes
 - `ColorAnim.qml`: 200ms InOutQuad for color transitions
 
@@ -101,5 +107,3 @@ Standard animations use Material Design curves:
 - **Noctalia**: Clean architecture, component organization, bar structure
 
 ## License
-
-MIT (or whatever you prefer)
