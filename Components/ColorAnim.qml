@@ -1,6 +1,7 @@
 import QtQuick
+import "../Commons"
 
 ColorAnimation {
-    duration: 200
+    duration: Style.animationFast
     easing.type: Easing.InOutQuad
 }

@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import "../../Commons"
 import "../../Components"
 
-ClippingRectangle {
+BasePill {
     id: root
 
     readonly property var activeWindow: Hyprland.focusedWindow
@@ -14,18 +14,20 @@ ClippingRectangle {
     readonly property string windowClass: activeWindow?.class ?? ""
     readonly property bool hasWindow: activeWindow !== null
 
-    implicitWidth: Math.min(titleRow.implicitWidth + Style.pillPaddingHorizontal * 2, 400)
-    implicitHeight: Style.pillHeight
+    implicitWidth: Math.min(titleRow.implicitWidth + Style.pillPaddingHorizontal * 2, Style.pillMaxWidth)
+    pillColor: hasWindow ? Colors.pillBackground : Qt.alpha(Colors.pillBackground, Style.opacityDisabled)
+    tooltip: hasWindow ? windowTitle : "No active window"
 
-    color: hasWindow ? Colors.pillBackground : Qt.alpha(Colors.pillBackground, 0.5)
-    radius: Style.radiusFull
-
-    Behavior on color {
-        ColorAnim {}
+    onClicked: {
+        if (hasWindow) {
+            // Could open window switcher or action menu
+        }
     }
 
-    Behavior on implicitWidth {
-        Anim {}
+    onRightClicked: {
+        if (hasWindow) {
+            Hyprland.dispatch("killactive")
+        }
     }
 
     Row {
@@ -33,108 +35,31 @@ ClippingRectangle {
         anchors.centerIn: parent
         spacing: Style.spacingNormal
 
-        // App icon (simplified - just showing a window icon)
+        // App icon
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: {
-                // Map common app classes to icons
-                const cls = windowClass.toLowerCase()
-                if (cls.includes("firefox") || cls.includes("chrome") || cls.includes("browser"))
-                    return "󰈹"  // Browser
-                if (cls.includes("code") || cls.includes("editor"))
-                    return "󰨞"  // Code
-                if (cls.includes("terminal") || cls.includes("kitty") || cls.includes("alacritty"))
-                    return "󰆍"  // Terminal
-                if (cls.includes("discord"))
-                    return "󰙯"  // Discord
-                if (cls.includes("spotify"))
-                    return "󰓇"  // Music
-                if (cls.includes("file") || cls.includes("thunar") || cls.includes("nautilus"))
-                    return "󰉋"  // Files
-                return "󰖲"  // Generic window
-            }
-            color: hasWindow ? Colors.blue : Colors.overlay0
+            text: getWindowIcon(root.windowClass)
+            color: root.hasWindow ? Colors.primary : Colors.pillIconMuted
             font.pixelSize: Style.fontSizeLarge
-            font.family: "monospace"
-            visible: hasWindow
+            font.family: Style.iconFont
+            visible: root.hasWindow
 
             Behavior on color {
-                ColorAnim {}
+                ColorAnimation {
+                    duration: Style.animationFast
+                    easing.type: Easing.InOutQuad
+                }
             }
         }
 
-        // Window title with scrolling for long titles
-        Item {
+        // Window title with scrolling
+        ScrollingText {
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(titleText.implicitWidth, 300)
-            height: titleText.implicitHeight
-            clip: true
-
-            Text {
-                id: titleText
-                text: windowTitle
-                color: hasWindow ? Colors.text : Colors.overlay0
-                font.pixelSize: Style.fontSizeNormal
-                font.family: "monospace"
-
-                Behavior on color {
-                    ColorAnim {}
-                }
-
-                // Scroll animation for long titles
-                property bool needsScroll: implicitWidth > 300
-
-                SequentialAnimation on x {
-                    running: titleText.needsScroll && hasWindow
-                    loops: Animation.Infinite
-
-                    // Wait before starting scroll
-                    PauseAnimation { duration: 2000 }
-
-                    // Scroll left
-                    NumberAnimation {
-                        from: 0
-                        to: -(titleText.implicitWidth - 300)
-                        duration: Math.max(3000, (titleText.implicitWidth - 300) * 10)
-                        easing.type: Easing.Linear
-                    }
-
-                    // Wait at end
-                    PauseAnimation { duration: 1000 }
-
-                    // Scroll back
-                    NumberAnimation {
-                        from: -(titleText.implicitWidth - 300)
-                        to: 0
-                        duration: Math.max(3000, (titleText.implicitWidth - 300) * 10)
-                        easing.type: Easing.Linear
-                    }
-
-                    // Wait before looping
-                    PauseAnimation { duration: 2000 }
-                }
-
-                // Reset scroll position when title changes
-                onTextChanged: {
-                    x = 0
-                }
-            }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        
-        onClicked: function(mouse) {
-            if (mouse.button === Qt.LeftButton && hasWindow) {
-                // Could trigger window menu or action
-                console.log("Window:", windowTitle, "Class:", windowClass)
-            } else if (mouse.button === Qt.RightButton && hasWindow) {
-                // Could close window
-                Hyprland.dispatch("killactive")
-            }
+            text: root.windowTitle
+            color: root.hasWindow ? Colors.pillText : Colors.pillTextMuted
+            maxWidth: Style.titleMaxWidth
+            font.pixelSize: Style.fontSizeNormal
+            font.family: Style.fontFamily
         }
     }
 
@@ -143,29 +68,68 @@ ClippingRectangle {
         target: Hyprland
 
         function onFocusedWindowChanged() {
-            windowChangeFeedback.restart()
+            root.pulse()
         }
     }
 
-    SequentialAnimation {
-        id: windowChangeFeedback
+    // Icon mapping function
+    function getWindowIcon(windowClass: string): string {
+        const cls = windowClass.toLowerCase()
 
-        NumberAnimation {
-            target: root
-            property: "scale"
-            from: 1.0
-            to: 0.95
-            duration: Style.animationFast
-            easing.type: Easing.OutCubic
-        }
+        // Browsers
+        if (cls.includes("firefox") || cls.includes("librewolf"))
+            return Style.iconBrowser
+        if (cls.includes("chrome") || cls.includes("chromium") || cls.includes("brave"))
+            return Style.iconBrowser
 
-        NumberAnimation {
-            target: root
-            property: "scale"
-            from: 0.95
-            to: 1.0
-            duration: Style.animationFast
-            easing.type: Easing.InCubic
-        }
+        // Development
+        if (cls.includes("code") || cls.includes("codium") || cls.includes("vscodium"))
+            return Style.iconCode
+        if (cls.includes("nvim") || cls.includes("vim") || cls.includes("neovide"))
+            return Style.iconCode
+        if (cls.includes("jetbrains") || cls.includes("idea") || cls.includes("webstorm"))
+            return Style.iconCode
+
+        // Terminals
+        if (cls.includes("terminal") || cls.includes("kitty") || cls.includes("alacritty"))
+            return Style.iconTerminal
+        if (cls.includes("wezterm") || cls.includes("foot") || cls.includes("konsole"))
+            return Style.iconTerminal
+
+        // Communication
+        if (cls.includes("discord"))
+            return Style.iconDiscord
+        if (cls.includes("telegram") || cls.includes("signal") || cls.includes("slack"))
+            return "󰍡"
+        if (cls.includes("thunderbird") || cls.includes("mail"))
+            return "󰇮"
+
+        // Media
+        if (cls.includes("spotify") || cls.includes("music") || cls.includes("rhythmbox"))
+            return Style.iconMusic
+        if (cls.includes("mpv") || cls.includes("vlc") || cls.includes("video"))
+            return "󰕧"
+
+        // File managers
+        if (cls.includes("thunar") || cls.includes("nautilus") || cls.includes("dolphin"))
+            return Style.iconFiles
+        if (cls.includes("file") || cls.includes("nemo") || cls.includes("pcmanfm"))
+            return Style.iconFiles
+
+        // Graphics
+        if (cls.includes("gimp") || cls.includes("inkscape") || cls.includes("krita"))
+            return "󰃣"
+        if (cls.includes("blender"))
+            return "󰂫"
+
+        // Games
+        if (cls.includes("steam") || cls.includes("lutris"))
+            return "󰓓"
+
+        // System
+        if (cls.includes("settings") || cls.includes("control"))
+            return "󰒓"
+
+        return Style.iconWindow
     }
 }

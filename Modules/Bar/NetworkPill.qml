@@ -6,35 +6,49 @@ import QtQuick.Layouts
 import "../../Commons"
 import "../../Components"
 
-ClippingRectangle {
+BasePill {
     id: root
 
+    // Network state
     property var networkInfo: ({
         connected: false,
         ssid: "",
         strength: 0,
-        ethernet: false
+        type: "none",  // none, wifi, ethernet, vpn
+        error: false
     })
 
+    readonly property bool isConnected: networkInfo.connected
+    readonly property bool isWifi: networkInfo.type === "wifi"
+    readonly property bool isEthernet: networkInfo.type === "ethernet"
+    readonly property bool isVpn: networkInfo.type === "vpn"
+    readonly property bool isWeak: isWifi && networkInfo.strength < 40
+
     implicitWidth: networkRow.implicitWidth + Style.pillPaddingHorizontal * 2
-    implicitHeight: Style.pillHeight
-
-    color: Colors.pillBackground
-    radius: Style.radiusFull
-
-    Behavior on color {
-        ColorAnim {}
+    pillColor: networkInfo.error ? Colors.errorContainer : Colors.pillBackground
+    tooltip: {
+        if (networkInfo.error) return "Network error"
+        if (!isConnected) return "Disconnected"
+        if (isWifi) return networkInfo.ssid + " (" + networkInfo.strength + "%)"
+        if (isEthernet) return "Ethernet: " + networkInfo.ssid
+        if (isVpn) return "VPN: " + networkInfo.ssid
+        return "Connected"
     }
 
-    // Poll network status using nmcli
+    onClicked: {
+        // Could open network settings
+    }
+
+    // Network status polling
     Process {
         id: networkProc
         running: true
         command: ["nmcli", "-t", "-f", "TYPE,STATE,CONNECTION,SIGNAL", "device", "status"]
 
+        property bool foundConnection: false
+
         stdout: SplitParser {
             onRead: line => {
-                // Parse nmcli output: TYPE:STATE:CONNECTION:SIGNAL
                 const parts = line.split(":")
                 if (parts.length < 3) return
 
@@ -44,19 +58,31 @@ ClippingRectangle {
                 const signal = parts[3] ? parseInt(parts[3]) : 0
 
                 if (state === "connected") {
+                    networkProc.foundConnection = true
+
                     if (type === "ethernet") {
                         networkInfo = {
                             connected: true,
                             ssid: connection,
                             strength: 100,
-                            ethernet: true
+                            type: "ethernet",
+                            error: false
                         }
                     } else if (type === "wifi") {
                         networkInfo = {
                             connected: true,
                             ssid: connection,
                             strength: signal,
-                            ethernet: false
+                            type: "wifi",
+                            error: false
+                        }
+                    } else if (type === "tun" || type === "wireguard") {
+                        networkInfo = {
+                            connected: true,
+                            ssid: connection,
+                            strength: 100,
+                            type: "vpn",
+                            error: false
                         }
                     }
                 }
@@ -64,14 +90,31 @@ ClippingRectangle {
         }
 
         onExited: (code, status) => {
-            // Restart polling after 5 seconds
+            if (code !== 0) {
+                networkInfo = {
+                    connected: false,
+                    ssid: "",
+                    strength: 0,
+                    type: "none",
+                    error: true
+                }
+            } else if (!foundConnection) {
+                networkInfo = {
+                    connected: false,
+                    ssid: "",
+                    strength: 0,
+                    type: "none",
+                    error: false
+                }
+            }
+            foundConnection = false
             restartTimer.start()
         }
     }
 
     Timer {
         id: restartTimer
-        interval: 5000
+        interval: Style.networkPollInterval
         onTriggered: {
             networkProc.running = true
         }
@@ -82,56 +125,42 @@ ClippingRectangle {
         anchors.centerIn: parent
         spacing: Style.spacingNormal
 
+        // Network icon
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: {
-                if (networkInfo.ethernet) {
-                    return "󰈀"  // Ethernet icon
-                }
-                
-                if (!networkInfo.connected) {
-                    return "󰖪"  // WiFi off
-                }
-                
-                // WiFi signal strength icons
-                const strength = networkInfo.strength
-                if (strength >= 80) return "󰤨"  // Full
-                if (strength >= 60) return "󰤥"  // Good
-                if (strength >= 40) return "󰤢"  // OK
-                if (strength >= 20) return "󰤟"  // Weak
-                return "󰤯"  // Very weak
+                if (root.networkInfo.error) return "󰤮"  // Error
+                if (root.isVpn) return Style.iconVpn
+                if (root.isEthernet) return Style.iconEthernet
+                if (!root.isConnected) return Style.iconWifiOff
+                return Style.getWifiIcon(root.networkInfo.strength)
             }
-            color: networkInfo.connected ? Colors.text : Colors.overlay0
+            color: {
+                if (root.networkInfo.error) return Colors.error
+                if (root.isConnected) return root.isWeak ? Colors.networkWeak : Colors.networkConnected
+                return Colors.networkDisconnected
+            }
             font.pixelSize: Style.fontSizeLarge
-            font.family: "monospace"
+            font.family: Style.iconFont
 
             Behavior on color {
-                ColorAnim {}
+                ColorAnimation {
+                    duration: Style.animationFast
+                    easing.type: Easing.InOutQuad
+                }
             }
         }
 
+        // Connection name
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: networkInfo.connected ? networkInfo.ssid : "Disconnected"
+            text: root.isConnected ? root.networkInfo.ssid : "Disconnected"
             color: Colors.pillText
             font.pixelSize: Style.fontSizeNormal
-            font.family: "monospace"
+            font.family: Style.fontFamily
             elide: Text.ElideRight
-            
-            // Limit width to prevent overly long SSIDs
             maximumLineCount: 1
-            width: Math.min(implicitWidth, 150)
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        
-        onClicked: {
-            // Could open network manager UI
-            console.log("Network clicked - Connected:", networkInfo.connected, 
-                       "SSID:", networkInfo.ssid, "Strength:", networkInfo.strength)
+            width: Math.min(implicitWidth, Style.ssidMaxWidth)
         }
     }
 
@@ -139,32 +168,10 @@ ClippingRectangle {
     Connections {
         target: root
 
-        function onNetworkInfoChanged() {
-            if (networkInfo.connected) {
-                connectFeedback.restart()
+        function onIsConnectedChanged() {
+            if (isConnected) {
+                root.bounce()
             }
-        }
-    }
-
-    SequentialAnimation {
-        id: connectFeedback
-
-        NumberAnimation {
-            target: root
-            property: "scale"
-            from: 1.0
-            to: 1.05
-            duration: Style.animationFast
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            target: root
-            property: "scale"
-            from: 1.05
-            to: 1.0
-            duration: Style.animationFast
-            easing.type: Easing.InCubic
         }
     }
 }

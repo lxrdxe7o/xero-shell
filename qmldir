@@ -1,19 +1,42 @@
 module XeroShell
 
+# ========================================
 # Singletons - Commons
+# ========================================
 singleton Colors 1.0 Commons/Colors.qml
 singleton Style 1.0 Commons/Style.qml
 
-# Components
+# ========================================
+# Reusable Components
+# ========================================
 Anim 1.0 Components/Anim.qml
 ColorAnim 1.0 Components/ColorAnim.qml
+ScrollingText 1.0 Components/ScrollingText.qml
+BasePill 1.0 Components/BasePill.qml
 
-# Modules - Bar
+# ========================================
+# Bar Module
+# ========================================
 Bar 1.0 Modules/Bar/Bar.qml
+
+# Core Pills
 WorkspacesPill 1.0 Modules/Bar/WorkspacesPill.qml
-ClockPill 1.0 Modules/Bar/ClockPill.qml
 WindowTitlePill 1.0 Modules/Bar/WindowTitlePill.qml
-VolumePill 1.0 Modules/Bar/VolumePill.qml
-BatteryPill 1.0 Modules/Bar/BatteryPill.qml
-NetworkPill 1.0 Modules/Bar/NetworkPill.qml
+ClockPill 1.0 Modules/Bar/ClockPill.qml
 MediaPill 1.0 Modules/Bar/MediaPill.qml
+
+# Audio Pills
+VolumePill 1.0 Modules/Bar/VolumePill.qml
+MicPill 1.0 Modules/Bar/MicPill.qml
+
+# Network & Connectivity Pills
+NetworkPill 1.0 Modules/Bar/NetworkPill.qml
+BluetoothPill 1.0 Modules/Bar/BluetoothPill.qml
+
+# System Resource Pills
+CpuPill 1.0 Modules/Bar/CpuPill.qml
+MemoryPill 1.0 Modules/Bar/MemoryPill.qml
+
+# Power & Display Pills
+BatteryPill 1.0 Modules/Bar/BatteryPill.qml
+BrightnessPill 1.0 Modules/Bar/BrightnessPill.qml

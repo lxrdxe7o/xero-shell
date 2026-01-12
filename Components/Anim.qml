@@ -1,6 +1,7 @@
 import QtQuick
+import "../Commons"
 
 NumberAnimation {
-    duration: 300
+    duration: Style.animationNormal
     easing.type: Easing.OutCubic
 }

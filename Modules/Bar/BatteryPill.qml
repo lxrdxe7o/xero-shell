@@ -6,34 +6,49 @@ import QtQuick.Layouts
 import "../../Commons"
 import "../../Components"
 
-ClippingRectangle {
+BasePill {
     id: root
 
     readonly property var battery: UPower.displayDevice
     readonly property bool hasBattery: battery?.isLaptopBattery ?? false
     readonly property bool isReady: hasBattery && (battery?.percentage !== undefined)
     readonly property int percent: isReady ? Math.round(battery.percentage * 100) : 0
-    readonly property bool charging: isReady ? (battery.state === UPowerDeviceState.Charging || 
+    readonly property bool charging: isReady ? (battery.state === UPowerDeviceState.Charging ||
                                                   battery.state === UPowerDeviceState.FullyCharged ||
                                                   battery.state === UPowerDeviceState.PendingCharge) : false
-    readonly property bool isLow: percent < 20 && !charging
-    readonly property bool isCritical: percent < 10 && !charging
+    readonly property bool isLow: percent < Style.batteryLowThreshold && !charging
+    readonly property bool isCritical: percent < Style.batteryCriticalThreshold && !charging
 
-    // Don't show if no battery
+    readonly property string timeRemaining: {
+        if (!isReady) return ""
+        const seconds = charging ? battery.timeToFull : battery.timeToEmpty
+        if (seconds <= 0) return ""
+        const hours = Math.floor(seconds / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+        if (hours > 0) return hours + "h " + minutes + "m"
+        return minutes + "m"
+    }
+
     visible: hasBattery
     implicitWidth: visible ? (batteryRow.implicitWidth + Style.pillPaddingHorizontal * 2) : 0
-    implicitHeight: Style.pillHeight
 
-    color: {
-        if (isCritical) return Colors.red
-        if (isLow) return Colors.yellow
-        if (charging) return Qt.alpha(Colors.blue, 0.3)
+    pillColor: {
+        if (isCritical) return Colors.batteryCritical
+        if (isLow) return Colors.warningContainer
+        if (charging) return Colors.primaryContainer
         return Colors.pillBackground
     }
-    radius: Style.radiusFull
 
-    Behavior on color {
-        ColorAnim {}
+    tooltip: {
+        if (!isReady) return "Battery unavailable"
+        let tip = percent + "%"
+        if (charging) tip += " (Charging)"
+        if (timeRemaining) tip += " - " + timeRemaining + " remaining"
+        return tip
+    }
+
+    onClicked: {
+        // Could open power settings
     }
 
     Row {
@@ -41,74 +56,54 @@ ClippingRectangle {
         anchors.centerIn: parent
         spacing: Style.spacingNormal
 
+        // Battery icon
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: {
-                if (!isReady) return "󰂎"  // Unknown
-                
-                if (charging) {
-                    return "󰂄"  // Charging
-                }
-                
-                // Battery level icons (10 levels)
-                if (percent >= 90) return "󰁹"
-                if (percent >= 80) return "󰂂"
-                if (percent >= 70) return "󰂁"
-                if (percent >= 60) return "󰂀"
-                if (percent >= 50) return "󰁿"
-                if (percent >= 40) return "󰁾"
-                if (percent >= 30) return "󰁽"
-                if (percent >= 20) return "󰁼"
-                if (percent >= 10) return "󰁻"
-                return "󰁺"  // Very low
-            }
+            text: Style.getBatteryIcon(root.percent, root.charging)
             color: {
-                if (isCritical) return Colors.base
-                if (isLow) return Colors.base
-                if (charging) return Colors.blue
-                return Colors.text
+                if (root.isCritical) return Colors.onError
+                if (root.isLow) return Colors.onWarning
+                if (root.charging) return Colors.batteryCharging
+                return Colors.batteryNormal
             }
             font.pixelSize: Style.fontSizeLarge
-            font.family: "monospace"
+            font.family: Style.iconFont
 
             Behavior on color {
-                ColorAnim {}
+                ColorAnimation {
+                    duration: Style.animationFast
+                    easing.type: Easing.InOutQuad
+                }
             }
         }
 
+        // Battery percentage
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: percent + "%"
-            color: (isCritical || isLow) ? Colors.base : Colors.pillText
+            text: root.percent + "%"
+            color: (root.isCritical || root.isLow) ? Colors.onWarning : Colors.pillText
             font.pixelSize: Style.fontSizeNormal
-            font.family: "monospace"
+            font.family: Style.fontFamily
 
             Behavior on color {
-                ColorAnim {}
+                ColorAnimation {
+                    duration: Style.animationFast
+                    easing.type: Easing.InOutQuad
+                }
             }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        
-        onClicked: {
-            // Could open power settings or battery details
-            console.log("Battery clicked - State:", battery.state, "Time to empty:", battery.timeToEmpty)
         }
     }
 
     // Critical battery warning animation
     SequentialAnimation {
-        running: isCritical
+        running: root.isCritical
         loops: Animation.Infinite
 
         NumberAnimation {
             target: root
             property: "opacity"
-            from: 1.0
-            to: 0.5
+            from: Style.opacityFull
+            to: Style.opacityDisabled
             duration: 500
             easing.type: Easing.InOutQuad
         }
@@ -116,10 +111,19 @@ ClippingRectangle {
         NumberAnimation {
             target: root
             property: "opacity"
-            from: 0.5
-            to: 1.0
+            from: Style.opacityDisabled
+            to: Style.opacityFull
             duration: 500
             easing.type: Easing.InOutQuad
+        }
+    }
+
+    // State change feedback
+    Connections {
+        target: battery
+
+        function onStateChanged() {
+            root.bounce()
         }
     }
 }

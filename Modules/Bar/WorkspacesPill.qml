@@ -6,40 +6,32 @@ import QtQuick.Layouts
 import "../../Commons"
 import "../../Components"
 
-ClippingRectangle {
+BasePill {
     id: root
 
     required property var screen
 
-    // Get workspaces for this monitor
     readonly property var workspaces: {
         const all = Hyprland.workspaces.values
-        // Filter to this monitor's workspaces
-        return all.filter(ws => ws.monitor?.name === screen.name).slice(0, 5)
+        return all.filter(ws => ws.monitor?.name === screen.name).slice(0, Style.maxWorkspaces)
     }
 
     readonly property int activeWorkspaceId: Hyprland.focusedWorkspace?.id ?? 1
 
     implicitWidth: Style.pillMinWidth + Style.pillPaddingHorizontal * 2
-    implicitHeight: layout.implicitHeight + Style.paddingSmall * 2
-
-    color: Colors.pillBackground
-    radius: Style.radiusFull
-
-    Behavior on color {
-        ColorAnim {}
-    }
+    tooltip: "Workspaces"
 
     ColumnLayout {
         id: layout
-
         anchors.centerIn: parent
         spacing: Style.spacingSmall
 
         Repeater {
-            model: 5  // Show 5 workspaces
+            model: Style.maxWorkspaces
 
             Item {
+                id: workspaceItem
+
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: Style.pillMinWidth
                 Layout.preferredHeight: Style.pillMinWidth
@@ -47,45 +39,92 @@ ClippingRectangle {
                 property int workspaceId: index + 1
                 property bool isActive: root.activeWorkspaceId === workspaceId
                 property bool isOccupied: {
-                    // Check if workspace has windows
                     const ws = root.workspaces.find(w => w.id === workspaceId)
                     return ws ? (ws.lastWindow !== null) : false
                 }
+                property bool isUrgent: {
+                    const ws = root.workspaces.find(w => w.id === workspaceId)
+                    return ws?.urgent ?? false
+                }
 
                 Rectangle {
+                    id: indicator
                     anchors.centerIn: parent
-                    width: parent.isActive ? Style.pillMinWidth : Style.pillMinWidth * 0.7
+                    width: workspaceItem.isActive ? Style.pillMinWidth : Style.pillMinWidth * Style.workspaceInactiveScale
                     height: width
                     radius: Style.radiusFull
 
                     color: {
-                        if (parent.isActive) return Colors.activeWorkspace
-                        if (parent.isOccupied) return Colors.occupiedWorkspace
+                        if (workspaceItem.isUrgent) return Colors.urgentWorkspace
+                        if (workspaceItem.isActive) return Colors.activeWorkspace
+                        if (workspaceItem.isOccupied) return Colors.occupiedWorkspace
                         return Colors.emptyWorkspace
                     }
 
                     Behavior on width {
-                        Anim {}
+                        NumberAnimation {
+                            duration: Style.animationNormal
+                            easing.type: Easing.OutCubic
+                        }
                     }
 
                     Behavior on height {
-                        Anim {}
+                        NumberAnimation {
+                            duration: Style.animationNormal
+                            easing.type: Easing.OutCubic
+                        }
                     }
 
                     Behavior on color {
-                        ColorAnim {}
+                        ColorAnimation {
+                            duration: Style.animationFast
+                            easing.type: Easing.InOutQuad
+                        }
                     }
 
                     Text {
                         anchors.centerIn: parent
-                        text: parent.parent.workspaceId
-                        color: parent.parent.isActive ? Colors.onPrimary : Colors.pillText
-                        font.pixelSize: parent.parent.isActive ? Style.fontSizeLarge : Style.fontSizeNormal
-                        font.bold: parent.parent.isActive
-                        font.family: "monospace"
+                        text: workspaceItem.workspaceId
+                        color: workspaceItem.isActive ? Colors.onPrimary : Colors.pillText
+                        font.pixelSize: workspaceItem.isActive ? Style.fontSizeLarge : Style.fontSizeNormal
+                        font.bold: workspaceItem.isActive
+                        font.family: Style.fontFamily
 
                         Behavior on color {
-                            ColorAnim {}
+                            ColorAnimation {
+                                duration: Style.animationFast
+                                easing.type: Easing.InOutQuad
+                            }
+                        }
+
+                        Behavior on font.pixelSize {
+                            NumberAnimation {
+                                duration: Style.animationFast
+                            }
+                        }
+                    }
+
+                    // Urgent animation
+                    SequentialAnimation {
+                        running: workspaceItem.isUrgent
+                        loops: Animation.Infinite
+
+                        NumberAnimation {
+                            target: indicator
+                            property: "scale"
+                            from: 1.0
+                            to: 1.15
+                            duration: 400
+                            easing.type: Easing.InOutQuad
+                        }
+
+                        NumberAnimation {
+                            target: indicator
+                            property: "scale"
+                            from: 1.15
+                            to: 1.0
+                            duration: 400
+                            easing.type: Easing.InOutQuad
                         }
                     }
                 }
@@ -94,10 +133,19 @@ ClippingRectangle {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        Hyprland.dispatch("workspace " + parent.workspaceId)
+                        Hyprland.dispatch("workspace " + workspaceItem.workspaceId)
                     }
                 }
             }
+        }
+    }
+
+    // Workspace change feedback
+    Connections {
+        target: Hyprland
+
+        function onFocusedWorkspaceChanged() {
+            root.bounce()
         }
     }
 }

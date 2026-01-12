@@ -4,47 +4,79 @@ import QtQuick
 import "../../Commons"
 import "../../Components"
 
-ClippingRectangle {
+BasePill {
     id: root
 
-    implicitWidth: clockText.implicitWidth + Style.pillPaddingHorizontal * 2
-    implicitHeight: Style.pillHeight
+    property bool showDate: false
+    property bool showSeconds: false
 
-    color: Colors.pillBackground
-    radius: Style.radiusFull
+    readonly property string timeFormat: showSeconds ? "hh:mm:ss" : "hh:mm"
+    readonly property string dateFormat: "ddd, MMM d"
+    readonly property string fullFormat: dateFormat + " " + timeFormat
 
-    Behavior on color {
-        ColorAnim {}
+    property date currentTime: new Date()
+    readonly property string displayText: showDate ? Qt.formatDateTime(currentTime, fullFormat) : Qt.formatTime(currentTime, timeFormat)
+
+    implicitWidth: clockRow.implicitWidth + Style.pillPaddingHorizontal * 2
+    tooltip: Qt.formatDateTime(currentTime, "dddd, MMMM d, yyyy")
+
+    onClicked: {
+        showDate = !showDate
     }
 
-    Text {
-        id: clockText
-        anchors.centerIn: parent
-        text: Qt.formatTime(new Date(), "hh:mm")
-        color: Colors.pillText
-        font.pixelSize: Style.fontSizeNormal
-        font.family: "monospace"
-
-        Behavior on color {
-            ColorAnim {}
-        }
+    onRightClicked: {
+        showSeconds = !showSeconds
     }
 
     Timer {
-        interval: 1000
+        interval: root.showSeconds ? 1000 : Style.clockUpdateInterval
         running: true
         repeat: true
         onTriggered: {
-            clockText.text = Qt.formatTime(new Date(), "hh:mm")
+            root.currentTime = new Date()
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: {
-            // Show date on click
-            clockText.text = Qt.formatDateTime(new Date(), "MMM dd hh:mm")
+    Row {
+        id: clockRow
+        anchors.centerIn: parent
+        spacing: Style.spacingNormal
+
+        // Clock icon (optional, shows on hover)
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.showDate ? Style.iconCalendar : Style.iconClock
+            color: Colors.primary
+            font.pixelSize: Style.fontSizeLarge
+            font.family: Style.iconFont
+            visible: root.hovered
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.animationFast
+                }
+            }
+        }
+
+        // Time/date display
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.displayText
+            color: Colors.pillText
+            font.pixelSize: Style.fontSizeNormal
+            font.family: Style.fontFamily
+            font.bold: root.showDate
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Style.animationFast
+                    easing.type: Easing.InOutQuad
+                }
+            }
         }
     }
+
+    // Mode change feedback
+    onShowDateChanged: bounce()
+    onShowSecondsChanged: pulse()
 }
