@@ -18,10 +18,11 @@ BasePill {
 
     readonly property int activeWorkspaceId: Hyprland.focusedWorkspace?.id ?? 1
 
-    implicitWidth: Style.pillMinWidth + Style.pillPaddingHorizontal * 2
+    implicitWidth: layout.implicitWidth + Style.pillPaddingHorizontal * 2
+    implicitHeight: Style.pillHeight
     tooltip: "Workspaces"
 
-    ColumnLayout {
+    RowLayout {
         id: layout
         anchors.centerIn: parent
         spacing: Style.spacingSmall
@@ -32,9 +33,8 @@ BasePill {
             Item {
                 id: workspaceItem
 
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: Style.pillMinWidth
-                Layout.preferredHeight: Style.pillMinWidth
+                Layout.preferredWidth: indicator.width
+                Layout.preferredHeight: Style.pillHeight - Style.spacingNormal
 
                 property int workspaceId: index + 1
                 property bool isActive: root.activeWorkspaceId === workspaceId
@@ -50,15 +50,30 @@ BasePill {
                 Rectangle {
                     id: indicator
                     anchors.centerIn: parent
-                    width: workspaceItem.isActive ? Style.pillMinWidth : Style.pillMinWidth * Style.workspaceInactiveScale
-                    height: width
-                    radius: Style.radiusFull
+                    width: workspaceItem.isActive ? Style.workspaceActiveWidth : Style.workspaceInactiveWidth
+                    height: workspaceItem.isActive ? Style.workspaceActiveHeight : Style.workspaceInactiveHeight
+                    radius: Style.radiusSmall
 
                     color: {
                         if (workspaceItem.isUrgent) return Colors.urgentWorkspace
                         if (workspaceItem.isActive) return Colors.activeWorkspace
                         if (workspaceItem.isOccupied) return Colors.occupiedWorkspace
                         return Colors.emptyWorkspace
+                    }
+
+                    // Glow effect for active workspace
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: "transparent"
+                        border.width: workspaceItem.isActive ? 1 : 0
+                        border.color: Colors.activeWorkspace
+                        opacity: 0.5
+                        visible: workspaceItem.isActive
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: Style.animationFast }
+                        }
                     }
 
                     Behavior on width {
@@ -82,25 +97,23 @@ BasePill {
                         }
                     }
 
+                    // Workspace number (only show on active or hover)
                     Text {
                         anchors.centerIn: parent
                         text: workspaceItem.workspaceId
                         color: workspaceItem.isActive ? Colors.onPrimary : Colors.pillText
-                        font.pixelSize: workspaceItem.isActive ? Style.fontSizeLarge : Style.fontSizeNormal
+                        font.pixelSize: Style.fontSizeSmall
                         font.bold: workspaceItem.isActive
                         font.family: Style.fontFamily
+                        opacity: workspaceItem.isActive || workspaceItem.isOccupied ? 1.0 : 0.0
+                        visible: opacity > 0
 
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Style.animationFast
-                                easing.type: Easing.InOutQuad
-                            }
+                        Behavior on opacity {
+                            NumberAnimation { duration: Style.animationFast }
                         }
 
-                        Behavior on font.pixelSize {
-                            NumberAnimation {
-                                duration: Style.animationFast
-                            }
+                        Behavior on color {
+                            ColorAnimation { duration: Style.animationFast }
                         }
                     }
 
@@ -111,17 +124,17 @@ BasePill {
 
                         NumberAnimation {
                             target: indicator
-                            property: "scale"
+                            property: "opacity"
                             from: 1.0
-                            to: 1.15
+                            to: 0.5
                             duration: 400
                             easing.type: Easing.InOutQuad
                         }
 
                         NumberAnimation {
                             target: indicator
-                            property: "scale"
-                            from: 1.15
+                            property: "opacity"
+                            from: 0.5
                             to: 1.0
                             duration: 400
                             easing.type: Easing.InOutQuad

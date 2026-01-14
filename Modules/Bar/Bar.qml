@@ -13,7 +13,6 @@ Variants {
         required property var modelData
         property var screen: modelData
 
-        // Wayland layer shell configuration
         WlrLayershell.namespace: "xero-shell-bar"
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.exclusiveZone: height
@@ -24,7 +23,7 @@ Variants {
             right: true
         }
 
-        height: Style.barHeight
+        implicitHeight: Style.barHeight
         color: Colors.transparent
 
         Rectangle {
@@ -33,53 +32,75 @@ Variants {
             color: Colors.barBackground
             opacity: Style.barOpacity
 
+            // Subtle bottom border
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Colors.surface1
+                opacity: 0.3
+            }
+
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: Style.barPadding
-                spacing: Style.spacingLarge
+                anchors.leftMargin: Style.barPadding
+                anchors.rightMargin: Style.barPadding
+                anchors.topMargin: Style.barPadding / 2
+                anchors.bottomMargin: Style.barPadding / 2
+                spacing: Style.spacingNormal
 
                 // ========================================
-                // Left Section - Workspaces & Window Title
+                // LEFT SECTION
                 // ========================================
-                WorkspacesPill {
+                Row {
                     Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                    screen: bar.screen
-                }
+                    spacing: Style.spacingNormal
 
-                WindowTitlePill {
-                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                    Layout.fillWidth: false
+                    WorkspacesPill {
+                        anchors.verticalCenter: parent.verticalCenter
+                        screen: bar.screen
+                    }
+
+                    WindowTitlePill {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 // Left spacer
-                Item {
-                    Layout.fillWidth: true
-                }
+                Item { Layout.fillWidth: true }
 
                 // ========================================
-                // Center Section - Media & Clock
+                // CENTER SECTION
                 // ========================================
-                MediaPill {
+                Row {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                }
+                    spacing: Style.spacingNormal
 
-                ClockPill {
-                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                    MediaPill {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    ClockPill {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    WeatherPill {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 // Right spacer
-                Item {
-                    Layout.fillWidth: true
-                }
+                Item { Layout.fillWidth: true }
 
                 // ========================================
-                // Right Section - System Indicators
+                // RIGHT SECTION
                 // ========================================
                 Row {
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     spacing: Style.spacingNormal
 
-                    // System resources (optional - can be hidden)
+                    // System resources
                     CpuPill {
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -114,39 +135,18 @@ Variants {
                     BatteryPill {
                         anchors.verticalCenter: parent.verticalCenter
                     }
+
+                    // Notifications
+                    NotifyPill {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    // System Tray
+                    TrayPill {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
             }
-        }
-
-        // Bar hover animation
-        Rectangle {
-            id: hoverIndicator
-            anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: hoverArea.containsMouse ? parent.width : 0
-            height: 2
-            color: Colors.primary
-            opacity: hoverArea.containsMouse ? 1 : 0
-
-            Behavior on width {
-                NumberAnimation {
-                    duration: Style.animationNormal
-                    easing.type: Easing.OutCubic
-                }
-            }
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: Style.animationFast
-                }
-            }
-        }
-
-        MouseArea {
-            id: hoverArea
-            anchors.fill: parent
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
         }
     }
 }

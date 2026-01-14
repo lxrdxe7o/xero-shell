@@ -64,13 +64,8 @@ BasePill {
     }
 
     // Window change animation
-    Connections {
-        target: Hyprland
-
-        function onFocusedWindowChanged() {
-            root.pulse()
-        }
-    }
+    onWindowTitleChanged: pulse()
+    onWindowClassChanged: pulse()
 
     // Icon mapping function
     function getWindowIcon(windowClass: string): string {

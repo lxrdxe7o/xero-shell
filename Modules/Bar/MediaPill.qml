@@ -3,6 +3,7 @@ import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import "../../Commons"
 import "../../Components"
 
@@ -14,7 +15,10 @@ BasePill {
     readonly property bool isPlaying: hasPlayer && (player.playbackState === MprisPlaybackState.Playing)
     readonly property string trackTitle: player?.trackTitle ?? ""
     readonly property string trackArtist: player?.trackArtist ?? ""
+    readonly property string trackAlbum: player?.trackAlbum ?? ""
     readonly property string playerName: player?.identity ?? "Media"
+    readonly property url albumArt: player?.trackArtUrl ?? ""
+    readonly property bool hasAlbumArt: albumArt.toString() !== ""
 
     readonly property string displayText: {
         if (!hasPlayer) return "No media"
@@ -26,7 +30,12 @@ BasePill {
     visible: hasPlayer
     implicitWidth: visible ? Math.min(mediaRow.implicitWidth + Style.pillPaddingHorizontal * 2, Style.pillMaxWidth) : 0
     pillColor: isPlaying ? Colors.primaryContainer : Colors.pillBackground
-    tooltip: hasPlayer ? playerName + ": " + displayText : "No media player"
+    tooltip: {
+        if (!hasPlayer) return "No media player"
+        let tip = playerName + "\n" + displayText
+        if (trackAlbum) tip += "\nAlbum: " + trackAlbum
+        return tip
+    }
 
     onClicked: {
         if (hasPlayer && player.canTogglePlaying) {
@@ -61,7 +70,78 @@ BasePill {
         anchors.centerIn: parent
         spacing: Style.spacingNormal
 
-        // Play/pause icon with animation
+        // Album art thumbnail
+        Item {
+            id: albumArtContainer
+            width: Style.pillHeight - Style.spacingNormal
+            height: width
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.hasAlbumArt
+
+            Rectangle {
+                id: albumArtMask
+                anchors.fill: parent
+                radius: Style.radiusSmall
+                color: Colors.surface0
+                visible: false
+            }
+
+            Image {
+                id: albumArtImage
+                anchors.fill: parent
+                source: root.albumArt
+                sourceSize: Qt.size(width * 2, height * 2)
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                antialiasing: true
+                asynchronous: true
+                visible: false
+            }
+
+            // Rounded album art using ShaderEffectSource
+            ShaderEffectSource {
+                anchors.fill: parent
+                sourceItem: albumArtImage
+                visible: albumArtImage.status === Image.Ready
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: albumArtMask
+                }
+            }
+
+            // Fallback if no album art or loading
+            Rectangle {
+                anchors.fill: parent
+                radius: Style.radiusSmall
+                color: Colors.surface0
+                visible: !albumArtImage.status === Image.Ready || !root.hasAlbumArt
+
+                Text {
+                    anchors.centerIn: parent
+                    text: Style.iconMusic
+                    color: Colors.pillIcon
+                    font.pixelSize: Style.fontSizeNormal
+                    font.family: Style.iconFont
+                }
+            }
+
+            // Playing indicator overlay
+            Rectangle {
+                anchors.fill: parent
+                radius: Style.radiusSmall
+                color: Colors.scrim
+                opacity: root.isPlaying ? 0.3 : 0.6
+                visible: albumArtImage.status === Image.Ready
+
+                Behavior on opacity {
+                    NumberAnimation { duration: Style.animationFast }
+                }
+            }
+        }
+
+        // Play/pause icon (shown when no album art, or as overlay indicator)
         Text {
             id: playIcon
             anchors.verticalCenter: parent.verticalCenter
@@ -69,6 +149,7 @@ BasePill {
             color: root.isPlaying ? Colors.mediaPlaying : Colors.pillText
             font.pixelSize: Style.fontSizeLarge
             font.family: Style.iconFont
+            visible: !root.hasAlbumArt
 
             Behavior on color {
                 ColorAnimation {
@@ -79,7 +160,7 @@ BasePill {
 
             // Pulsing animation when playing
             SequentialAnimation on scale {
-                running: root.isPlaying
+                running: root.isPlaying && !root.hasAlbumArt
                 loops: Animation.Infinite
 
                 NumberAnimation {

@@ -97,15 +97,6 @@ BasePill {
     }
 
     // Visual feedback on changes
-    Connections {
-        target: source?.audio
-
-        function onVolumeChanged() {
-            root.bounce()
-        }
-
-        function onMutedChanged() {
-            root.pulse()
-        }
-    }
+    onVolumeChanged: bounce()
+    onMutedChanged: pulse()
 }
