@@ -1,26 +1,29 @@
 # xero-shell
 
-A minimal, Caelestia-inspired Wayland shell for Hyprland/Sway built with Quickshell.
+A Golden Noir-themed Wayland shell for Hyprland built with Quickshell, inspired by Waybar.
 
 ## Features
 
-- **Pill-shaped components** inspired by Caelestia's design
-- **Catppuccin Mocha** color scheme with high contrast mode
-- **Workspace indicator** with active/occupied/urgent states
-- **Clean architecture** with reusable BasePill component
+- **Golden Noir theme** with gold and purple accents on true black
+- **Horizontal workspace indicators** with animated transitions
+- **OLED-optimized** colors and 125% scale factor
+- **Pill-shaped components** with hover effects and tooltips
+- **Album art display** in media player
+- **System tray** with collapsible icons
+- **Weather integration** via wttr.in
+- **Notification center** via SwayNC
 - **Zero Python dependencies** - pure QML
-- **Smooth animations** with Material-inspired easing curves
-- **Interactive tooltips** on hover
-- **Comprehensive system monitoring**
+- **JetBrains Mono Nerd Font** for icons
 
 ## Modules
 
 | Pill | Description | Interactions |
 |------|-------------|--------------|
-| **WorkspacesPill** | Workspace indicators (1-5) | Click to switch |
+| **WorkspacesPill** | Horizontal workspace indicators (1-10) | Click to switch |
 | **WindowTitlePill** | Active window with app icons | Right-click to close |
 | **ClockPill** | Time display | Click for date, right-click for seconds |
-| **MediaPill** | MPRIS media controls | Click play/pause, scroll seek |
+| **MediaPill** | MPRIS media with album art | Click play/pause, scroll seek |
+| **WeatherPill** | Weather from wttr.in | Hover for humidity/wind |
 | **VolumePill** | PipeWire audio sink | Click mute, scroll adjust |
 | **MicPill** | Microphone control | Click mute, scroll adjust |
 | **NetworkPill** | WiFi/Ethernet/VPN status | Hover for details |
@@ -29,6 +32,8 @@ A minimal, Caelestia-inspired Wayland shell for Hyprland/Sway built with Quicksh
 | **MemoryPill** | RAM usage monitor | - |
 | **BrightnessPill** | Display brightness | Click toggle, scroll adjust |
 | **BatteryPill** | Battery with time remaining | Critical warning animation |
+| **NotifyPill** | SwayNC notifications | Click toggle, right-click DND |
+| **TrayPill** | System tray icons | Click to expand/collapse |
 
 ## Project Structure
 
@@ -36,9 +41,10 @@ A minimal, Caelestia-inspired Wayland shell for Hyprland/Sway built with Quicksh
 xero-shell/
 ├── shell.qml                    # Main entry point
 ├── qmldir                       # Module exports
+├── PLAN.md                      # Development roadmap
 ├── Commons/                     # Shared singletons
-│   ├── Colors.qml              # Catppuccin Mocha + semantic colors
-│   └── Style.qml               # All dimensions, icons, helpers
+│   ├── Colors.qml              # Golden Noir + Catppuccin palette
+│   └── Style.qml               # Dimensions, icons, scale factor
 ├── Components/                  # Reusable components
 │   ├── Anim.qml                # Standard number animation
 │   ├── ColorAnim.qml           # Color transition animation
@@ -46,10 +52,11 @@ xero-shell/
 │   └── BasePill.qml            # Base pill with hover/tooltip/feedback
 └── Modules/Bar/                 # Bar module
     ├── Bar.qml                 # Main bar container
-    ├── WorkspacesPill.qml      # Workspace indicator
+    ├── WorkspacesPill.qml      # Horizontal workspace indicator
     ├── WindowTitlePill.qml     # Active window title
     ├── ClockPill.qml           # Clock widget
-    ├── MediaPill.qml           # Media player controls
+    ├── MediaPill.qml           # Media player with album art
+    ├── WeatherPill.qml         # Weather display
     ├── VolumePill.qml          # Audio volume control
     ├── MicPill.qml             # Microphone control
     ├── NetworkPill.qml         # Network status
@@ -57,7 +64,9 @@ xero-shell/
     ├── CpuPill.qml             # CPU usage
     ├── MemoryPill.qml          # Memory usage
     ├── BrightnessPill.qml      # Display brightness
-    └── BatteryPill.qml         # Battery indicator
+    ├── BatteryPill.qml         # Battery indicator
+    ├── NotifyPill.qml          # Notification center
+    └── TrayPill.qml            # System tray
 ```
 
 ## Running
@@ -81,33 +90,29 @@ quickshell -c xero-shell
 Edit `Commons/Colors.qml` to change the color scheme.
 
 ```qml
-// Toggle high contrast mode
-property bool highContrast: true
+// Golden Noir accent colors
+readonly property color gold: "#ffd700"
+readonly property color purple: "#cba6f7"
 
-// Customize semantic colors
-readonly property color primary: blue      // Accent color
-readonly property color error: red         // Error states
-readonly property color warning: yellow    // Warning states
+// Workspace colors
+readonly property color activeWorkspace: gold
+readonly property color occupiedWorkspace: purple
 ```
 
-### Dimensions & Behavior
+### Scale & Dimensions
 
-Edit `Commons/Style.qml` to adjust all configuration:
+Edit `Commons/Style.qml` to adjust scaling:
 
 ```qml
+// Scale factor for 1080p OLED (1.25x)
+readonly property real scaleFactor: 1.25
+
 // Bar dimensions
-readonly property int barHeight: 40
-readonly property int pillHeight: 32
+readonly property int barHeight: Math.round(44 * scaleFactor)
+readonly property int pillHeight: Math.round(32 * scaleFactor)
 
 // Workspace settings
-readonly property int maxWorkspaces: 5
-
-// Polling intervals (ms)
-readonly property int networkPollInterval: 5000
-readonly property int cpuPollInterval: 2000
-
-// Volume step per scroll
-readonly property real volumeStep: 0.05
+readonly property int maxWorkspaces: 10
 ```
 
 ### Bar Layout
@@ -115,14 +120,14 @@ readonly property real volumeStep: 0.05
 The bar layout is defined in `Modules/Bar/Bar.qml`:
 
 - **Left**: WorkspacesPill, WindowTitlePill
-- **Center**: MediaPill, ClockPill
-- **Right**: System indicators (CPU, Memory, Bluetooth, Network, Mic, Volume, Brightness, Battery)
+- **Center**: MediaPill, ClockPill, WeatherPill
+- **Right**: CpuPill, MemoryPill, BluetoothPill, NetworkPill, MicPill, VolumePill, BrightnessPill, BatteryPill, NotifyPill, TrayPill
 
 ## Dependencies
 
 **Required:**
 - Quickshell
-- Hyprland or Sway (Wayland compositor)
+- Hyprland (Wayland compositor)
 - PipeWire (for audio controls)
 - NetworkManager (for network status)
 - UPower (for battery)
@@ -130,22 +135,16 @@ The bar layout is defined in `Modules/Bar/Bar.qml`:
 **Optional:**
 - `brightnessctl` (for brightness control)
 - `bluetoothctl` (for Bluetooth control)
-- Nerd Fonts (for icons)
+- `swaync` (for notification center)
+- `curl` (for weather fetching)
+- JetBrains Mono Nerd Font (for icons)
 
-## Code Style
+## Design
 
-Follows the guidelines in `AGENTS.md`:
-
-- 4 spaces indentation
-- Imports ordered: Quickshell → Qt → local
-- All magic numbers in Style.qml
-- Colors via semantic mappings
-- BasePill for consistent pill behavior
-
-## Design Inspiration
-
-- **Caelestia**: Pill shapes, vertical workspace layout, Material 3 colors
-- **Noctalia**: Clean architecture, component organization, bar structure
+- **Theme**: Golden Noir with true black background (#040406)
+- **Accents**: Gold (#ffd700) for active, Purple (#cba6f7) for occupied
+- **Font**: JetBrains Mono Nerd Font
+- **Inspiration**: Waybar dotfiles, Catppuccin Mocha palette
 
 ## License
 
