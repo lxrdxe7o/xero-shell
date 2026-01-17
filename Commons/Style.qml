@@ -213,6 +213,11 @@ Singleton {
     // Tray
     readonly property string iconTray: "󰏘"
 
+    // Actions
+    readonly property string iconClose: "󰅖"
+    readonly property string iconClear: "󰃢"
+    readonly property string iconRefresh: "󰑓"
+
     // Idle
     readonly property string iconIdle: "󰛐"
     readonly property string iconIdleOff: "󰛑"

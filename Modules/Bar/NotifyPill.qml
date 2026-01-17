@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
@@ -9,9 +8,12 @@ import "../../Components"
 BasePill {
     id: root
 
-    property int notifyCount: 0
-    property bool dndEnabled: false
+    // Reference to the panel (set by parent)
+    property var notificationPanel: null
 
+    // Use NotificationManager
+    readonly property int notifyCount: NotificationManager.count
+    readonly property bool dndEnabled: NotificationManager.dnd
     readonly property bool hasNotifications: notifyCount > 0
 
     implicitWidth: notifyRow.implicitWidth + Style.pillPaddingHorizontal * 2
@@ -23,78 +25,17 @@ BasePill {
     }
 
     onClicked: {
-        // Toggle notification center
-        toggleProc.running = true
+        // Toggle notification panel
+        if (notificationPanel) {
+            notificationPanel.toggle()
+        }
+        bounce()
     }
 
     onRightClicked: {
         // Toggle DND
-        dndProc.running = true
-    }
-
-    // Get notification count
-    Process {
-        id: countProc
-        running: true
-        command: ["swaync-client", "-c"]
-
-        stdout: SplitParser {
-            onRead: line => {
-                const count = parseInt(line.trim())
-                if (!isNaN(count)) {
-                    notifyCount = count
-                }
-            }
-        }
-
-        onExited: (code, status) => {
-            restartTimer.start()
-        }
-    }
-
-    // Get DND status
-    Process {
-        id: dndCheckProc
-        running: true
-        command: ["swaync-client", "-D"]
-
-        stdout: SplitParser {
-            onRead: line => {
-                dndEnabled = line.trim() === "true"
-            }
-        }
-
-        onExited: (code, status) => {
-            dndRestartTimer.start()
-        }
-    }
-
-    // Toggle notification center
-    Process {
-        id: toggleProc
-        command: ["swaync-client", "-t"]
-    }
-
-    // Toggle DND
-    Process {
-        id: dndProc
-        command: ["swaync-client", "-d"]
-
-        onExited: {
-            dndCheckProc.running = true
-        }
-    }
-
-    Timer {
-        id: restartTimer
-        interval: Style.notifyPollInterval
-        onTriggered: countProc.running = true
-    }
-
-    Timer {
-        id: dndRestartTimer
-        interval: Style.notifyPollInterval
-        onTriggered: dndCheckProc.running = true
+        NotificationManager.toggleDnd()
+        pulse()
     }
 
     Row {
@@ -159,5 +100,10 @@ BasePill {
         if (notifyCount > 0) {
             bounce()
         }
+    }
+
+    // Close panel when DND toggled
+    onDndEnabledChanged: {
+        pulse()
     }
 }

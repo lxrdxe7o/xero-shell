@@ -5,6 +5,7 @@ module XeroShell
 # ========================================
 singleton Colors 1.0 Commons/Colors.qml
 singleton Style 1.0 Commons/Style.qml
+singleton NotificationManager 1.0 Commons/NotificationManager.qml
 
 # ========================================
 # Reusable Components
@@ -40,3 +41,8 @@ MemoryPill 1.0 Modules/Bar/MemoryPill.qml
 # Power & Display Pills
 BatteryPill 1.0 Modules/Bar/BatteryPill.qml
 BrightnessPill 1.0 Modules/Bar/BrightnessPill.qml
+
+# Notification System
+NotifyPill 1.0 Modules/Bar/NotifyPill.qml
+NotificationPanel 1.0 Modules/Bar/NotificationPanel.qml
+NotificationItem 1.0 Modules/Bar/NotificationItem.qml

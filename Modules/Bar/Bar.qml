@@ -13,6 +13,12 @@ Variants {
         required property var modelData
         property var screen: modelData
 
+        // Notification panel instance
+        NotificationPanel {
+            id: notificationPanel
+            screen: bar.screen
+        }
+
         WlrLayershell.namespace: "xero-shell-bar"
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.exclusiveZone: height
@@ -139,6 +145,7 @@ Variants {
                     // Notifications
                     NotifyPill {
                         anchors.verticalCenter: parent.verticalCenter
+                        notificationPanel: notificationPanel
                     }
 
                     // System Tray
